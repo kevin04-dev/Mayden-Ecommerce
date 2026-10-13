@@ -3,11 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "start": "prisma migrate deploy && node dist/src/server.js",
     "prisma:generate": "prisma generate",
+    "postinstall": "prisma generate",
     "migrate": "prisma migrate dev",
     "seed": "tsx prisma/seed.ts"
   },
@@ -31,5 +35,6 @@
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   },
-  "allowScripts": {}
+  "allowScripts": {},
+  "main": "dist/src/server.js"
 }

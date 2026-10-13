@@ -1,0 +1,62 @@
+services:
+  # --- PostgreSQL database ---
+  - type: pserv
+    name: mayden-postgres
+    runtime: image
+    plan: free
+    # Render's native PostgreSQL service; the connection URL is exposed via
+    # the "DATABASE_URL" Render-generated environment variable (see envVars).
+    image:
+      url: postgres:16-alpine
+    envVars:
+      - key: POSTGRES_USER
+        value: mayden
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+      - key: POSTGRES_DB
+        value: mayden_db
+
+  # --- Backend API ---
+  - type: web
+    name: mayden-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromService:
+          type: pserv
+          name: mayden-postgres
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      # FRONTEND_URL is set manually after the first deploy, once you know the
+      # frontend's final *.onrender.com URL (see step 6 in the README).
+
+  # --- Frontend static site ---
+  - type: web
+    name: mayden-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    pullRequestPreviewsEnabled: true
+    routes:
+      # SPA fallback: any unknown path serves index.html so refreshes work
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        sync: false # set manually to https://mayden-api.onrender.com/api after the API exists
+
+# Note about FREE plan limitation: free PostgreSQL databases expire after 30
+# days on Render's free tier. Upgrade the DB to a paid plan ($6/mo) for a
+# persistent production database.
