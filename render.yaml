@@ -1,21 +1,14 @@
-services:
-  # --- PostgreSQL database ---
-  - type: pserv
-    name: mayden-postgres
-    runtime: image
-    plan: free
-    # Render's native PostgreSQL service; the connection URL is exposed via
-    # the "DATABASE_URL" Render-generated environment variable (see envVars).
-    image:
-      url: postgres:16-alpine
-    envVars:
-      - key: POSTGRES_USER
-        value: mayden
-      - key: POSTGRES_PASSWORD
-        generateValue: true
-      - key: POSTGRES_DB
-        value: mayden_db
+# Render Blueprint for the Mayden Ecommerce project.
+# Provisions: PostgreSQL database, backend API, frontend static site.
 
+# --- PostgreSQL database (Render's native managed Postgres) ---
+databases:
+  - name: mayden-postgres
+    databaseName: mayden_db
+    user: mayden
+    plan: free
+
+services:
   # --- Backend API ---
   - type: web
     name: mayden-api
@@ -29,8 +22,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        fromService:
-          type: pserv
+        fromDatabase:
           name: mayden-postgres
           property: connectionString
       - key: JWT_SECRET
